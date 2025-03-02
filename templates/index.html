@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modelo de toma de decisiones: toma de galletas, por Juan Pablo Aguilar</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .factors {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .factor-group {
+            flex: 1;
+            margin: 0 10px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .slider-container {
+            margin: 10px 0;
+        }
+        .decision {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .utility-display {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .explanation {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .formula {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .utility-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #ddd;
+            border-radius: 15px;
+            position: relative;
+            margin: 10px 0;
+        }
+        .utility-marker {
+            position: absolute;
+            width: 4px;
+            height: 30px;
+            background-color: black;
+            transform: translateX(-50%);
+        }
+        .utility-zone {
+            position: absolute;
+            height: 30px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modelo de toma de decisiones: toma de galletas</h1>
+        <p>Por Juan Pablo Aguilar - Basado en el trabajo de <a href="https://scholar.google.com/citations?user=KUQmnuQAAAAJ&hl=en" target="_blank">Jara Ettinger</a> et al. (2020)</p>
+
+        <div class="factors">
+            <div class="factor-group">
+                <h3>Factores Objetivos</h3>
+                <div class="slider-container">
+                    <label>Altura del Agente (cm):</label><br>
+                    <input type="range" min="150" max="200" value="170" id="altura_agente">
+                    <span id="altura_agente_value">170</span>
+                </div>
+                <div class="slider-container">
+                    <label>Altura del Estante (cm):</label><br>
+                    <input type="range" min="50" max="200" value="160" id="altura_estante">
+                    <span id="altura_estante_value">160</span>
+                </div>
+            </div>
+
+            <div class="factor-group">
+                <h3>Factores Subjetivos</h3>
+                <div class="slider-container">
+                    <label>Hambre (1-10):</label><br>
+                    <input type="range" min="1" max="10" value="5" id="hambre">
+                    <span id="hambre_value">5</span>
+                </div>
+                <div class="slider-container">
+                    <label>Valor de la Galleta (1-10):</label><br>
+                    <input type="range" min="1" max="10" value="5" id="valor_galleta">
+                    <span id="valor_galleta_value">5</span>
+                </div>
+                <div class="slider-container">
+                    <label>Altruismo (1-10):</label><br>
+                    <input type="range" min="1" max="10" value="5" id="altruismo">
+                    <span id="altruismo_value">5</span>
+                </div>
+                <div class="slider-container">
+                    <label>Simpatía (1-10):</label><br>
+                    <input type="range" min="1" max="10" value="5" id="simpatia">
+                    <span id="simpatia_value">5</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="radar_chart"></div>
+        <div class="decision" id="decision"></div>
+
+        <div class="utility-display">
+            <h3>Análisis de Utilidad</h3>
+            <div id="utility_values"></div>
+            <div class="utility-bar">
+                <div class="utility-zone" style="left: 0%; width: 33.3%; background-color: #4444ff;"></div>
+                <div class="utility-zone" style="left: 33.3%; width: 33.3%; background-color: #ffaa44;"></div>
+                <div class="utility-zone" style="left: 66.6%; width: 33.4%; background-color: #ff4444;"></div>
+                <div class="utility-marker" id="utility_marker"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                <span>Compartir (< 10)</span>
+                <span>Indecisión (10-20)</span>
+                <span>Tomar (> 20)</span>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>Explicación del Modelo</h3>
+            <p>Este modelo simula la toma de decisiones considerando factores objetivos y subjetivos:</p>
+
+            <h4>Cálculo del Esfuerzo Físico</h4>
+            <p>El esfuerzo físico se calcula considerando la diferencia entre la altura del agente y la altura del estante:</p>
+            <div class="formula">
+                esfuerzo_alcance = |altura_estante - altura_agente| / 100<br>
+                esfuerzo_agacharse = max(0, (altura_agente - altura_estante) / 100)<br>
+                esfuerzo_total = esfuerzo_alcance + esfuerzo_agacharse
+            </div>
+
+            <h4>Cálculo de Utilidad</h4>
+            <p>La utilidad total se calcula considerando factores personales y sociales:</p>
+            <div class="formula">
+                utilidad_personal = (hambre * valor_galleta) / (1 + esfuerzo_total * 2)<br>
+                utilidad_social = (altruismo * simpatia) * 1.5<br>
+                utilidad_total = utilidad_personal - utilidad_social
+            </div>
+
+            <h4>Regla de Decisión</h4>
+            <p>La decisión final se basa en umbrales de utilidad:</p>
+            <ul>
+                <li>Si utilidad_total > 20: "Tomar la galleta"</li>
+                <li>Si utilidad_total < 10: "Compartir la galleta"</li>
+                <li>Entre 10 y 20: "Indecisión"</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function updateValue(sliderId) {
+            document.getElementById(sliderId + '_value').textContent = document.getElementById(sliderId).value;
+        }
+
+        function calculateUtility() {
+            const altura_agente = parseFloat(document.getElementById('altura_agente').value);
+            const altura_estante = parseFloat(document.getElementById('altura_estante').value);
+            const hambre = parseFloat(document.getElementById('hambre').value);
+            const valor_galleta = parseFloat(document.getElementById('valor_galleta').value);
+            const altruismo = parseFloat(document.getElementById('altruismo').value);
+            const simpatia = parseFloat(document.getElementById('simpatia').value);
+
+            // Cálculo del esfuerzo físico
+            const esfuerzo_alcance = Math.abs(altura_estante - altura_agente) / 100;
+            const esfuerzo_agacharse = Math.max(0, (altura_agente - altura_estante) / 100);
+            const esfuerzo_total = esfuerzo_alcance + esfuerzo_agacharse;
+
+            // Cálculo de utilidades
+            const utilidad_personal = (hambre * valor_galleta) / (1 + esfuerzo_total * 2);
+            const utilidad_social = (altruismo * simpatia) * 1.5;
+            const utilidad_total = utilidad_personal - utilidad_social;
+
+            // Determinar decisión
+            let decision;
+            let color;
+            if (utilidad_total > 20) {
+                decision = "Tomar la galleta";
+                color = "#ff4444";
+            } else if (utilidad_total < 10) {
+                decision = "Compartir la galleta";
+                color = "#4444ff";
+            } else {
+                decision = "Indecisión";
+                color = "#ffaa44";
+            }
+
+            // Actualizar visualización
+            document.getElementById('decision').textContent = `Decisión: ${decision}`;
+            document.getElementById('decision').style.backgroundColor = color;
+            document.getElementById('decision').style.color = 'white';
+
+            // Actualizar valores de utilidad
+            document.getElementById('utility_values').innerHTML = `
+                Utilidad Personal: ${utilidad_personal.toFixed(2)}<br>
+                Utilidad Social: ${utilidad_social.toFixed(2)}<br>
+                Utilidad Total: ${utilidad_total.toFixed(2)}
+            `;
+
+            // Actualizar marcador de utilidad
+            const markerPosition = Math.max(0, Math.min(100, (utilidad_total + 10) * 2.5));
+            document.getElementById('utility_marker').style.left = `${markerPosition}%`;
+
+            // Datos para el gráfico de radar
+            const data = [{
+                type: 'scatterpolar',
+                r: [hambre, valor_galleta, altruismo, simpatia, esfuerzo_total * 5],
+                theta: ['Hambre', 'Valor Galleta', 'Altruismo', 'Simpatía', 'Esfuerzo'],
+                fill: 'toself',
+                name: 'Factores'
+            }];
+
+            const layout = {
+                polar: {
+                    radialaxis: {
+                        visible: true,
+                        range: [0, 10]
+                    }
+                },
+                showlegend: false
+            };
+
+            Plotly.newPlot('radar_chart', data, layout);
+        }
+
+        // Agregar event listeners
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', () => {
+                updateValue(slider.id);
+                calculateUtility();
+            });
+        });
+
+        // Calcular utilidad inicial
+        calculateUtility();
+    </script>
+</body>
+</html>
+
